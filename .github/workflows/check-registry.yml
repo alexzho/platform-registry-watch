@@ -1,0 +1,30 @@
+name: Check platform registry
+
+on:
+  schedule:
+    - cron: '17 3-23/4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch and compare official registry
+        run: python fetch_platform_registry.py --out platform_registry.json
+      - name: Save public snapshot
+        run: |
+          git config user.name 'registry-monitor[bot]'
+          git config user.email 'registry-monitor[bot]@users.noreply.github.com'
+          git add platform_registry.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update platform registry snapshot'
+            git push
+          fi
